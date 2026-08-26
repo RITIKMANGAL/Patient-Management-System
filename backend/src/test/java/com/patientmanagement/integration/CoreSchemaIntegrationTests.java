@@ -31,6 +31,7 @@ class CoreSchemaIntegrationTests {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("security.jwt.secret", () -> "test-only-jwt-secret-for-testcontainers-integration-tests");
     }
 
     @Autowired
@@ -49,9 +50,19 @@ class CoreSchemaIntegrationTests {
         assertThat(tableExists("medical_records")).isTrue();
         assertThat(tableExists("prescriptions")).isTrue();
         assertThat(tableExists("prescription_items")).isTrue();
+        assertThat(tableExists("users")).isTrue();
+        assertThat(tableExists("roles")).isTrue();
+        assertThat(tableExists("user_roles")).isTrue();
+        assertThat(tableExists("refresh_tokens")).isTrue();
 
         assertThat(constraintExists("doctors", "uk_doctors_license_number")).isTrue();
         assertThat(constraintExists("prescription_items", "fk_prescription_items_prescription")).isTrue();
+        assertThat(constraintExists("users", "uk_users_username")).isTrue();
+        assertThat(constraintExists("roles", "uk_roles_name")).isTrue();
+        assertThat(constraintExists("refresh_tokens", "uk_refresh_tokens_token_hash")).isTrue();
+        assertThat(roleExists("ADMIN")).isTrue();
+        assertThat(roleExists("DOCTOR")).isTrue();
+        assertThat(roleExists("RECEPTIONIST")).isTrue();
     }
 
     @Test
@@ -113,6 +124,15 @@ class CoreSchemaIntegrationTests {
                 Integer.class,
                 tableName,
                 constraintName
+        );
+        return count != null && count == 1;
+    }
+
+    private boolean roleExists(String roleName) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM roles WHERE name = ?",
+                Integer.class,
+                roleName
         );
         return count != null && count == 1;
     }

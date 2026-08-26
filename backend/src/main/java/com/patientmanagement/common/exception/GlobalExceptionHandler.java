@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -53,6 +55,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateResourceException(DuplicateResourceException exception) {
         return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException() {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Authentication failed");
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException() {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Access is denied");
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

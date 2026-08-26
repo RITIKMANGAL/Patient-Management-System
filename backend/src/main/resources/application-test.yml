@@ -8,3 +8,11 @@ spring:
       - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+
+security:
+  jwt:
+    secret: test-only-jwt-secret-for-automated-tests-at-least-32-bytes
+    access-token-expiration-seconds: 900
+    refresh-token-expiration-seconds: 604800
+  cors:
+    allowed-origins: http://localhost:5173

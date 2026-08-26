@@ -4,6 +4,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.patientmanagement.auth.repository.AuthUserRepository;
+import com.patientmanagement.auth.repository.RefreshTokenRepository;
+import com.patientmanagement.auth.repository.RoleRepository;
 import com.patientmanagement.doctor.service.DoctorService;
 import com.patientmanagement.medicalrecord.service.MedicalRecordService;
 import com.patientmanagement.patient.service.PatientService;
@@ -32,6 +35,15 @@ class OpenApiTests {
 
     @MockBean
     private PrescriptionService prescriptionService;
+
+    @MockBean
+    private AuthUserRepository authUserRepository;
+
+    @MockBean
+    private RoleRepository roleRepository;
+
+    @MockBean
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
     private MockMvc mockMvc;

@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +30,7 @@ public class MedicalRecordController {
     }
 
     @PostMapping("/api/v1/medical-records")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
     @Operation(summary = "Create a medical record")
     public ResponseEntity<MedicalRecordResponse> createMedicalRecord(
             @Valid @RequestBody MedicalRecordRequest request
@@ -37,12 +39,14 @@ public class MedicalRecordController {
     }
 
     @GetMapping("/api/v1/medical-records/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
     @Operation(summary = "Get a medical record by ID")
     public MedicalRecordResponse getMedicalRecord(@PathVariable UUID id) {
         return medicalRecordService.getMedicalRecord(id);
     }
 
     @GetMapping("/api/v1/patients/{patientId}/medical-records")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
     @Operation(summary = "List medical records for a patient")
     public Page<MedicalRecordResponse> getPatientMedicalRecords(
             @PathVariable UUID patientId,
