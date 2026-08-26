@@ -1,0 +1,11 @@
+.git
+.idea
+.vscode
+target
+*.log
+.env
+node_modules
+tmp
+temp
+*.tmp
+*.swp

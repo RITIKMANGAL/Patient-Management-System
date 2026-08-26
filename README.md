@@ -26,6 +26,8 @@ Implemented now:
 - PostgreSQL-backed refresh tokens stored as hashes
 - BCrypt password hashing
 - Configurable CORS for future frontend development
+- Docker-based local development environment
+- Docker Compose orchestration for backend and PostgreSQL
 - Unit tests, controller tests, and Testcontainers PostgreSQL integration coverage
 
 Not implemented yet:
@@ -37,7 +39,6 @@ Not implemented yet:
 - Frontend
 - Redis
 - RabbitMQ
-- Docker or Docker Compose
 - AWS deployment
 
 ## Technology Stack
@@ -56,7 +57,9 @@ Current backend:
 - Spring Security
 - Flyway
 - springdoc-openapi
-- Nimbus JOSE/JWT through Spring Security JOSE
+- Nimbus JOSE/JWT
+- Docker
+- Docker Compose
 - JUnit
 - Mockito
 - Spring Boot Test
@@ -65,23 +68,48 @@ Current backend:
 Planned future platform stack:
 
 - React, TypeScript, Vite, Tailwind CSS, shadcn/ui
-- PostgreSQL, Redis, RabbitMQ
-- Docker and Docker Compose
+- Redis, RabbitMQ
 - GitHub Actions
 - AWS
 
 ## Development Prerequisites
 
+- Docker
+- Docker Compose
+
+Optional, for running the backend or tests outside containers:
+
 - Java 21
 - Maven 3.9+
-- PostgreSQL 15+ for local runtime
-- Docker only when running Testcontainers-backed integration tests
+
+Manual PostgreSQL installation is not required for the Docker Compose workflow.
 
 ## Environment Variables
 
-The backend reads database settings from environment variables. Use `backend/.env.example` as documentation for the required names.
+The backend reads database and security settings from environment variables. Use `.env.example` for Docker Compose overrides and `backend/.env.example` when running the backend directly from your shell.
 
-Required for local runtime:
+Do not commit a real `.env` file.
+
+Docker Compose provides safe local defaults so a new checkout can start with:
+
+```bash
+docker compose up --build
+```
+
+For local Docker development, copy `.env.example` to `.env` only when you want to override defaults:
+
+```text
+POSTGRES_DB=patient_management
+DATABASE_URL=jdbc:postgresql://postgres:5432/patient_management
+DATABASE_USERNAME=patient_management
+DATABASE_PASSWORD=replace_with_local_development_password
+JWT_SECRET=replace_with_local_development_jwt_secret_at_least_32_bytes
+JWT_ACCESS_TOKEN_EXPIRATION=900
+JWT_REFRESH_TOKEN_EXPIRATION=604800
+CORS_ALLOWED_ORIGINS=http://localhost:5173
+```
+
+For direct JVM runtime outside Docker, use the host PostgreSQL address:
 
 ```text
 DATABASE_URL=jdbc:postgresql://localhost:5432/patient_management
@@ -99,9 +127,86 @@ Optional:
 SERVER_PORT=8080
 ```
 
-Do not commit a real `.env` file.
+Inside Docker, the backend must connect to PostgreSQL through the Compose service name `postgres`, not `localhost`.
 
-## Run Backend Locally
+## Local Development With Docker
+
+Start the complete local environment from the repository root:
+
+```bash
+docker compose up --build
+```
+
+This starts:
+
+- `postgres`: PostgreSQL 18 Alpine with a persistent named volume
+- `backend`: Spring Boot API built from `backend/Dockerfile`
+
+Application URLs:
+
+```text
+API base: http://localhost:8080
+Swagger:  http://localhost:8080/swagger-ui/index.html
+Health:   http://localhost:8080/actuator/health
+App health: http://localhost:8080/api/v1/health
+```
+
+Stop containers while keeping the database volume:
+
+```bash
+docker compose down
+```
+
+Stop containers and delete the local database volume:
+
+```bash
+docker compose down -v
+```
+
+The named volume is `postgres_data`. It survives `docker compose down` and is removed by `docker compose down -v`.
+
+View logs:
+
+```bash
+docker compose logs -f backend
+docker compose logs -f postgres
+```
+
+Rebuild without cache:
+
+```bash
+docker compose build --no-cache
+```
+
+Validate Compose configuration:
+
+```bash
+docker compose config
+```
+
+## Database Access
+
+PostgreSQL is exposed to the host on `localhost:5432` for local inspection. The application container still uses `postgres:5432` internally.
+
+Connect with the PostgreSQL client inside the container:
+
+```bash
+docker compose exec postgres psql -U patient_management -d patient_management
+```
+
+List tables:
+
+```sql
+\dt
+```
+
+Inspect Flyway history:
+
+```sql
+SELECT installed_rank, version, description, success FROM flyway_schema_history ORDER BY installed_rank;
+```
+
+## Run Backend Directly
 
 From the backend directory:
 
@@ -110,7 +215,7 @@ cd backend
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-The local profile expects PostgreSQL to be running and the database environment variables to be configured. Flyway creates the current core schema.
+The local profile expects PostgreSQL to be running and the database environment variables to be configured. Flyway creates the current core and auth schemas.
 
 ## Run Tests
 
@@ -121,6 +226,44 @@ mvn test
 ```
 
 The service and controller tests do not require a manually installed PostgreSQL instance. The PostgreSQL integration test uses Testcontainers and is skipped when Docker is not available.
+
+With Docker available, the Testcontainers-backed integration tests start PostgreSQL automatically and verify the Flyway-managed schema.
+
+## Docker Image
+
+`backend/Dockerfile` uses a multi-stage build:
+
+- Builder: `maven:3.9.9-eclipse-temurin-21-alpine`
+- Runtime: `eclipse-temurin:21-jre-alpine`
+
+The runtime image contains only the built Spring Boot JAR and runs as a non-root `app` user. Maven is not present in the runtime stage.
+
+## Docker Security Notes
+
+The Docker setup is for reproducible local development, not a complete production deployment architecture. The backend image runs as a non-root user, exposes only port `8080`, and receives database/JWT/CORS configuration through environment variables. PostgreSQL exposes `5432` to the host to make local development and inspection straightforward.
+
+Do not use the sample local passwords or JWT secret in shared environments. Override them through a local `.env` file or your shell.
+
+## Troubleshooting
+
+If the backend is unhealthy, check logs:
+
+```bash
+docker compose logs -f backend
+```
+
+If PostgreSQL is unhealthy, check logs:
+
+```bash
+docker compose logs -f postgres
+```
+
+If Flyway or JPA validation fails after schema changes, reset the local development database:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
 
 ## Current API
 
