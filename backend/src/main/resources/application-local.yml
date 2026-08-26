@@ -1,0 +1,8 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/patient_management}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
