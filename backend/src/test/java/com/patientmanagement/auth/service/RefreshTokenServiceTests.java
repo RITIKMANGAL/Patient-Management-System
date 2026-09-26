@@ -3,6 +3,7 @@ package com.patientmanagement.auth.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import com.patientmanagement.auth.model.AuthUser;
 import com.patientmanagement.auth.model.RefreshToken;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class RefreshTokenServiceTests {
 
@@ -43,7 +45,7 @@ class RefreshTokenServiceTests {
     void validateRefreshTokenReturnsActiveToken() {
         AuthUser user = enabledUser();
         RefreshToken refreshToken = new RefreshToken(user, refreshTokenService.hash("raw-token"), NOW.plusSeconds(60));
-        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hash("raw-token")))
+        when(refreshTokenRepository.findByTokenHashForUpdate(refreshTokenService.hash("raw-token")))
                 .thenReturn(Optional.of(refreshToken));
 
         assertThat(refreshTokenService.validateRefreshToken("raw-token")).isSameAs(refreshToken);
@@ -53,7 +55,19 @@ class RefreshTokenServiceTests {
     void expiredRefreshTokenIsRejected() {
         AuthUser user = enabledUser();
         RefreshToken refreshToken = new RefreshToken(user, refreshTokenService.hash("raw-token"), NOW.minusSeconds(1));
-        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hash("raw-token")))
+        when(refreshTokenRepository.findByTokenHashForUpdate(refreshTokenService.hash("raw-token")))
+                .thenReturn(Optional.of(refreshToken));
+
+        assertThatThrownBy(() -> refreshTokenService.validateRefreshToken("raw-token"))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Invalid refresh token");
+    }
+
+    @Test
+    void refreshTokenExpiringNowIsRejected() {
+        AuthUser user = enabledUser();
+        RefreshToken refreshToken = new RefreshToken(user, refreshTokenService.hash("raw-token"), NOW);
+        when(refreshTokenRepository.findByTokenHashForUpdate(refreshTokenService.hash("raw-token")))
                 .thenReturn(Optional.of(refreshToken));
 
         assertThatThrownBy(() -> refreshTokenService.validateRefreshToken("raw-token"))
@@ -66,7 +80,7 @@ class RefreshTokenServiceTests {
         AuthUser user = enabledUser();
         RefreshToken refreshToken = new RefreshToken(user, refreshTokenService.hash("raw-token"), NOW.plusSeconds(60));
         refreshToken.revoke();
-        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hash("raw-token")))
+        when(refreshTokenRepository.findByTokenHashForUpdate(refreshTokenService.hash("raw-token")))
                 .thenReturn(Optional.of(refreshToken));
 
         assertThatThrownBy(() -> refreshTokenService.validateRefreshToken("raw-token"))
@@ -79,7 +93,7 @@ class RefreshTokenServiceTests {
         AuthUser user = enabledUser();
         RefreshToken refreshToken = new RefreshToken(user, refreshTokenService.hash("raw-token"), NOW.plusSeconds(60));
         refreshToken.revoke();
-        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hash("raw-token")))
+        when(refreshTokenRepository.findByTokenHashForUpdate(refreshTokenService.hash("raw-token")))
                 .thenReturn(Optional.of(refreshToken));
 
         assertThatThrownBy(() -> refreshTokenService.validateRefreshToken("raw-token"))
@@ -92,6 +106,29 @@ class RefreshTokenServiceTests {
 
         assertThat(hash).hasSize(64);
         assertThat(hash).doesNotContain("raw-token");
+    }
+
+    @Test
+    void logoutOnlyRevokesRefreshTokenOwnedByCurrentUser() {
+        AuthUser tokenOwner = enabledUser();
+        java.util.UUID tokenOwnerId = java.util.UUID.randomUUID();
+        ReflectionTestUtils.setField(tokenOwner, "id", tokenOwnerId);
+        RefreshToken refreshToken = new RefreshToken(
+                tokenOwner,
+                refreshTokenService.hash("raw-token"),
+                NOW.plusSeconds(60)
+        );
+        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hash("raw-token")))
+                .thenReturn(Optional.of(refreshToken));
+
+        refreshTokenService.revokeRefreshTokenForUser("raw-token", java.util.UUID.randomUUID());
+
+        assertThat(refreshToken.isRevoked()).isFalse();
+
+        refreshTokenService.revokeRefreshTokenForUser("raw-token", tokenOwnerId);
+
+        assertThat(refreshToken.isRevoked()).isTrue();
+        verify(refreshTokenRepository).save(refreshToken);
     }
 
     private AuthUser enabledUser() {

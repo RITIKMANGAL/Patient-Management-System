@@ -73,6 +73,21 @@ public class Prescription {
         item.setPrescription(this);
     }
 
+    public void update(
+            Patient patient,
+            Doctor doctor,
+            LocalDate prescriptionDate,
+            String notes,
+            List<PrescriptionItem> replacementItems
+    ) {
+        this.patient = patient;
+        this.doctor = doctor;
+        this.prescriptionDate = prescriptionDate;
+        this.notes = notes;
+        items.clear();
+        replacementItems.forEach(this::addItem);
+    }
+
     public UUID getId() {
         return id;
     }

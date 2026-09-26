@@ -18,9 +18,9 @@ public class OpenApiConfig {
     public OpenAPI patientManagementOpenApi() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Patient Management System API")
+                        .title("Clinora API")
                         .version("v1")
-                        .description("Core patient management APIs for patients, doctors, medical records, and prescriptions."))
+                        .description("Core patient management APIs for authentication, patients, doctors, medical records, prescriptions, appointments, consultations, communications, and assistive AI."))
                 .components(new Components().addSecuritySchemes(BEARER_AUTH, new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")

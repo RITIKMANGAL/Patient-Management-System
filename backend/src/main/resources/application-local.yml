@@ -4,5 +4,48 @@ spring:
       on-profile: local
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/patient_management}
-    username: ${DATABASE_USERNAME}
+    username: ${DATABASE_USERNAME:patient_management}
     password: ${DATABASE_PASSWORD}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration-seconds: ${JWT_ACCESS_TOKEN_EXPIRATION:900}
+    refresh-token-expiration-seconds: ${JWT_REFRESH_TOKEN_EXPIRATION:604800}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+communication:
+  sms:
+    enabled: ${SMS_ENABLED:true}
+    provider: ${SMS_PROVIDER:noop}
+    sender: ${SMS_SENDER:PMCLINIC}
+    timeout-seconds: ${SMS_TIMEOUT_SECONDS:15}
+    templates:
+      appointment-confirmation: ${SMS_TEMPLATE_APPOINTMENT_CONFIRMATION:}
+      appointment-reminder: ${SMS_TEMPLATE_APPOINTMENT_REMINDER:}
+      consultation-completed: ${SMS_TEMPLATE_CONSULTATION_COMPLETED:}
+      prescription-available: ${SMS_TEMPLATE_PRESCRIPTION_AVAILABLE:}
+      feedback-request: ${SMS_TEMPLATE_FEEDBACK_REQUEST:}
+
+ai:
+  enabled: ${AI_ENABLED:true}
+  provider: ${AI_PROVIDER:mock}
+  model: ${AI_MODEL:mock-clinical-assistant-v1}
+  timeout-seconds: ${AI_TIMEOUT_SECONDS:15}
+  api-key: ${AI_API_KEY:}
+  base-url: ${AI_BASE_URL:https://api.openai.com/v1/chat/completions}
+
+prescription:
+  access:
+    token-expiration-hours: ${PRESCRIPTION_ACCESS_TOKEN_EXPIRATION_HOURS:168}
+
+feedback:
+  access:
+    token-expiration-hours: ${FEEDBACK_ACCESS_TOKEN_EXPIRATION_HOURS:168}
+    public-base-url: ${FEEDBACK_PUBLIC_BASE_URL:http://localhost:5173}
+
+demo:
+  data:
+    enabled: ${DEMO_DATA_ENABLED:false}
+    password: ${DEMO_DATA_PASSWORD:}

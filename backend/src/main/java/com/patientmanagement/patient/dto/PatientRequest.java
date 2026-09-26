@@ -2,6 +2,7 @@ package com.patientmanagement.patient.dto;
 
 import com.patientmanagement.patient.model.BloodGroup;
 import com.patientmanagement.patient.model.PatientGender;
+import com.patientmanagement.common.validation.ValidationPatterns;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,10 +14,12 @@ import java.time.LocalDate;
 public record PatientRequest(
         @NotBlank
         @Size(max = 100)
+        @Pattern(regexp = ValidationPatterns.PERSON_NAME, message = "must be a valid name")
         String firstName,
 
         @NotBlank
         @Size(max = 100)
+        @Pattern(regexp = ValidationPatterns.PERSON_NAME, message = "must be a valid name")
         String lastName,
 
         @NotNull
@@ -29,7 +32,7 @@ public record PatientRequest(
         BloodGroup bloodGroup,
 
         @NotBlank
-        @Pattern(regexp = "^\\+?[0-9 .()\\-]{7,25}$", message = "must be a valid phone number")
+        @Pattern(regexp = ValidationPatterns.PHONE, message = "must be a valid phone number")
         String phone,
 
         @Email
@@ -40,9 +43,10 @@ public record PatientRequest(
         String address,
 
         @Size(max = 150)
+        @Pattern(regexp = "^$|" + ValidationPatterns.PERSON_NAME, message = "must be a valid name")
         String emergencyContactName,
 
-        @Pattern(regexp = "^$|^\\+?[0-9 .()\\-]{7,25}$", message = "must be a valid phone number")
+        @Pattern(regexp = "^$|" + ValidationPatterns.PHONE, message = "must be a valid phone number")
         String emergencyContactPhone
 ) {
 }

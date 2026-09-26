@@ -1,11 +1,13 @@
 package com.patientmanagement.doctor.controller;
 
+import com.patientmanagement.common.web.PageableSortValidator;
 import com.patientmanagement.doctor.dto.DoctorRequest;
 import com.patientmanagement.doctor.dto.DoctorResponse;
 import com.patientmanagement.doctor.service.DoctorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +29,16 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Doctors", description = "Core doctor management APIs")
 public class DoctorController {
 
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "createdAt",
+            "updatedAt",
+            "firstName",
+            "lastName",
+            "specialization",
+            "licenseNumber",
+            "department"
+    );
+
     private final DoctorService doctorService;
 
     public DoctorController(DoctorService doctorService) {
@@ -44,6 +56,7 @@ public class DoctorController {
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     @Operation(summary = "List doctors")
     public Page<DoctorResponse> getDoctors(@PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        PageableSortValidator.validate(pageable, ALLOWED_SORT_FIELDS);
         return doctorService.getDoctors(pageable);
     }
 

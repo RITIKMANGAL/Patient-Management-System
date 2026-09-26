@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +17,7 @@ import com.patientmanagement.common.exception.ResourceNotFoundException;
 import com.patientmanagement.prescription.dto.PrescriptionItemResponse;
 import com.patientmanagement.prescription.dto.PrescriptionRequest;
 import com.patientmanagement.prescription.dto.PrescriptionResponse;
+import com.patientmanagement.prescription.service.PrescriptionPdfService;
 import com.patientmanagement.prescription.service.PrescriptionService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,6 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -35,6 +38,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 class PrescriptionControllerTests {
 
     private PrescriptionService prescriptionService;
+    private PrescriptionPdfService prescriptionPdfService;
     private MockMvc mockMvc;
     private UUID patientId;
     private UUID doctorId;
@@ -42,13 +46,17 @@ class PrescriptionControllerTests {
     @BeforeEach
     void setUp() {
         prescriptionService = org.mockito.Mockito.mock(PrescriptionService.class);
+        prescriptionPdfService = org.mockito.Mockito.mock(PrescriptionPdfService.class);
         patientId = UUID.randomUUID();
         doctorId = UUID.randomUUID();
-        mockMvc = MockMvcBuilders.standaloneSetup(new PrescriptionController(prescriptionService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new PrescriptionController(prescriptionService, prescriptionPdfService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setValidator(validator())
-                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper()))
+                .setMessageConverters(
+                        new ResourceHttpMessageConverter(),
+                        new MappingJackson2HttpMessageConverter(objectMapper())
+                )
                 .build();
     }
 
@@ -72,6 +80,20 @@ class PrescriptionControllerTests {
         mockMvc.perform(get("/api/v1/prescriptions/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
+    }
+
+    @Test
+    void getPrescriptionPdfReturnsPdfAttachment() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(prescriptionPdfService.generatePrescriptionPdf(id)).thenReturn("%PDF-1.7 synthetic".getBytes());
+        when(prescriptionPdfService.filenameFor(id)).thenReturn("prescription-" + id + ".pdf");
+
+        mockMvc.perform(get("/api/v1/prescriptions/{id}/pdf", id))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/pdf"))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"prescription-" + id + ".pdf\""))
+                .andExpect(result -> org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsByteArray())
+                        .isNotEmpty());
     }
 
     @Test

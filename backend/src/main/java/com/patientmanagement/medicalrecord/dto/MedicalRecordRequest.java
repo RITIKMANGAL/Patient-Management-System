@@ -1,5 +1,6 @@
 package com.patientmanagement.medicalrecord.dto;
 
+import com.patientmanagement.common.validation.ValidationPatterns;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -16,11 +17,13 @@ public record MedicalRecordRequest(
 
         @NotBlank
         @Size(max = 500)
+        @jakarta.validation.constraints.Pattern(regexp = ValidationPatterns.TEXT_WITH_LETTER, message = "must contain letters")
         String diagnosis,
 
         @Size(max = 1000)
         String symptoms,
 
+        @Size(max = 5000)
         String notes,
 
         @NotNull

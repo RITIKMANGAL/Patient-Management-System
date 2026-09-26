@@ -3,9 +3,14 @@ package com.patientmanagement.prescription.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.patientmanagement.common.exception.ResourceNotFoundException;
+import com.patientmanagement.communication.service.CommunicationService;
+import com.patientmanagement.auth.security.ClinicalAccessService;
 import com.patientmanagement.doctor.model.Doctor;
 import com.patientmanagement.doctor.service.DoctorService;
 import com.patientmanagement.patient.model.BloodGroup;
@@ -25,6 +30,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -43,6 +49,9 @@ class PrescriptionServiceTests {
     @Mock
     private DoctorService doctorService;
 
+    @Mock
+    private CommunicationService communicationService;
+
     private PrescriptionService prescriptionService;
     private UUID patientId;
     private UUID doctorId;
@@ -51,7 +60,12 @@ class PrescriptionServiceTests {
 
     @BeforeEach
     void setUp() {
-        prescriptionService = new PrescriptionService(prescriptionRepository, patientService, doctorService);
+        prescriptionService = new PrescriptionService(
+                prescriptionRepository,
+                patientService,
+                doctorService,
+                communicationService
+        );
         patientId = UUID.randomUUID();
         doctorId = UUID.randomUUID();
         patient = patient();
@@ -72,6 +86,23 @@ class PrescriptionServiceTests {
         assertThat(response.doctorId()).isEqualTo(doctorId);
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().getFirst().medicineName()).isEqualTo("Synthetic medicine A");
+        verify(communicationService).createPrescriptionAvailable(any(Prescription.class));
+    }
+
+    @Test
+    void createPrescriptionDoesNotFailWhenPrescriptionAvailableCommunicationFails() {
+        when(patientService.findPatientEntity(patientId)).thenReturn(patient);
+        when(doctorService.findDoctorEntity(doctorId)).thenReturn(doctor);
+        when(prescriptionRepository.save(any(Prescription.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new IllegalStateException("provider unavailable"))
+                .when(communicationService).createPrescriptionAvailable(any(Prescription.class));
+
+        PrescriptionResponse response = prescriptionService.createPrescription(request(patientId, doctorId));
+
+        assertThat(response.patientId()).isEqualTo(patientId);
+        assertThat(response.doctorId()).isEqualTo(doctorId);
+        assertThat(response.items()).hasSize(2);
+        verify(communicationService).createPrescriptionAvailable(any(Prescription.class));
     }
 
     @Test
@@ -104,6 +135,7 @@ class PrescriptionServiceTests {
         assertThatThrownBy(() -> prescriptionService.createPrescription(request(patientId, doctorId)))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Patient not found");
+        verifyNoInteractions(communicationService);
     }
 
     @Test
@@ -114,6 +146,55 @@ class PrescriptionServiceTests {
         assertThatThrownBy(() -> prescriptionService.createPrescription(request(patientId, doctorId)))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Doctor not found");
+        verifyNoInteractions(communicationService);
+    }
+
+    @Test
+    void doctorScopedCreatePrescriptionRejectsAnotherDoctorId() {
+        ClinicalAccessService clinicalAccessService = org.mockito.Mockito.mock(ClinicalAccessService.class);
+        PrescriptionService scopedService = new PrescriptionService(
+                prescriptionRepository,
+                patientService,
+                doctorService,
+                communicationService,
+                clinicalAccessService
+        );
+        doThrow(new ResourceNotFoundException("Doctor not found"))
+                .when(clinicalAccessService).requireDoctorMatches(doctorId);
+
+        assertThatThrownBy(() -> scopedService.createPrescription(request(patientId, doctorId)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Doctor not found");
+        verifyNoInteractions(communicationService);
+    }
+
+    @Test
+    void createPrescriptionRejectsMissingItemsWithoutCreatingCommunication() {
+        PrescriptionRequest request = new PrescriptionRequest(
+                patientId,
+                doctorId,
+                LocalDate.now(),
+                "Synthetic notes",
+                List.of()
+        );
+
+        assertThatThrownBy(() -> prescriptionService.createPrescription(request))
+                .isInstanceOf(com.patientmanagement.common.exception.InvalidRequestException.class)
+                .hasMessage("Prescription must contain at least one item");
+        verifyNoInteractions(communicationService);
+    }
+
+    @Test
+    void failedPrescriptionPersistenceDoesNotCreateCommunication() {
+        when(patientService.findPatientEntity(patientId)).thenReturn(patient);
+        when(doctorService.findDoctorEntity(doctorId)).thenReturn(doctor);
+        when(prescriptionRepository.save(any(Prescription.class)))
+                .thenThrow(new DataAccessResourceFailureException("synthetic persistence failure"));
+
+        assertThatThrownBy(() -> prescriptionService.createPrescription(request(patientId, doctorId)))
+                .isInstanceOf(DataAccessResourceFailureException.class)
+                .hasMessage("synthetic persistence failure");
+        verifyNoInteractions(communicationService);
     }
 
     private PrescriptionRequest request(UUID patientId, UUID doctorId) {

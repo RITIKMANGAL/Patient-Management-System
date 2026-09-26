@@ -75,6 +75,18 @@ public class AuthUser {
         roles.add(role);
     }
 
+    public void replaceCredentials(String passwordHash, String firstName, String lastName, boolean enabled) {
+        this.passwordHash = passwordHash;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.enabled = enabled;
+    }
+
+    public void replaceRoles(Set<Role> replacementRoles) {
+        roles.clear();
+        roles.addAll(replacementRoles);
+    }
+
     public UUID getId() {
         return id;
     }

@@ -30,7 +30,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @Operation(summary = "Register a receptionist user")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Provision a staff account (administrator only)")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }

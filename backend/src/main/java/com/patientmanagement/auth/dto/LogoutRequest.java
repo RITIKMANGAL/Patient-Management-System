@@ -8,4 +8,8 @@ public record LogoutRequest(
         @Size(max = 512)
         String refreshToken
 ) {
+    @Override
+    public String toString() {
+        return "LogoutRequest[redacted]";
+    }
 }

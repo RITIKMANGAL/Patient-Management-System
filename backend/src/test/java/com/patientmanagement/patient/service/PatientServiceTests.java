@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.patientmanagement.auth.security.ClinicalAccessService;
 import com.patientmanagement.common.exception.ResourceNotFoundException;
 import com.patientmanagement.patient.dto.PatientRequest;
 import com.patientmanagement.patient.dto.PatientResponse;
@@ -68,6 +69,21 @@ class PatientServiceTests {
                 .thenReturn(new PageImpl<>(java.util.List.of(patient("Asha", "Rao"))));
 
         assertThat(patientService.getPatients(PageRequest.of(0, 20)).getContent()).hasSize(1);
+    }
+
+    @Test
+    void doctorScopedPatientListReturnsOnlyPatientsWithDoctorRelationship() {
+        UUID doctorId = UUID.randomUUID();
+        ClinicalAccessService clinicalAccessService = org.mockito.Mockito.mock(ClinicalAccessService.class);
+        PatientService scopedService = new PatientService(patientRepository, clinicalAccessService);
+        when(clinicalAccessService.scopedDoctorId()).thenReturn(Optional.of(doctorId));
+        when(clinicalAccessService.currentDoctorId()).thenReturn(doctorId);
+        when(patientRepository.findPatientsForDoctor(doctorId, PageRequest.of(0, 20)))
+                .thenReturn(new PageImpl<>(java.util.List.of(patient("Asha", "Rao"))));
+
+        assertThat(scopedService.getPatients(PageRequest.of(0, 20)).getContent())
+                .extracting(PatientResponse::firstName)
+                .containsExactly("Asha");
     }
 
     @Test

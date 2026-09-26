@@ -1,0 +1,41 @@
+clinic:
+  time-zone: ${CLINIC_TIME_ZONE}
+
+app:
+  frontend-url: ${FRONTEND_API_URL}
+
+security:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  abuse-control:
+    enabled: true
+
+ai:
+  enabled: ${AI_ENABLED:false}
+
+communication:
+  sms:
+    enabled: ${SMS_ENABLED:false}
+  appointment-reminders:
+    enabled: ${APPOINTMENT_REMINDERS_ENABLED:false}
+
+feedback:
+  access:
+    public-base-url: ${FEEDBACK_PUBLIC_BASE_URL}
+
+demo:
+  data:
+    enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+  forward-headers-strategy: none

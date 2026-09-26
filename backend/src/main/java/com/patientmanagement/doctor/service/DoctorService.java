@@ -23,18 +23,19 @@ public class DoctorService {
 
     @Transactional
     public DoctorResponse createDoctor(DoctorRequest request) {
-        if (doctorRepository.existsByLicenseNumber(request.licenseNumber())) {
+        String licenseNumber = request.licenseNumber().trim();
+        if (doctorRepository.existsByLicenseNumber(licenseNumber)) {
             throw new DuplicateResourceException("Doctor license number already exists");
         }
 
         Doctor doctor = new Doctor(
-                request.firstName(),
-                request.lastName(),
-                request.specialization(),
-                request.licenseNumber(),
-                request.phone(),
-                request.email(),
-                request.department()
+                request.firstName().trim(),
+                request.lastName().trim(),
+                request.specialization().trim(),
+                licenseNumber,
+                request.phone().trim(),
+                trimToNull(request.email()),
+                trimToNull(request.department())
         );
         return toResponse(doctorRepository.save(doctor));
     }
@@ -51,18 +52,19 @@ public class DoctorService {
 
     @Transactional
     public DoctorResponse updateDoctor(UUID id, DoctorRequest request) {
-        if (doctorRepository.existsByLicenseNumberAndIdNot(request.licenseNumber(), id)) {
+        String licenseNumber = request.licenseNumber().trim();
+        if (doctorRepository.existsByLicenseNumberAndIdNot(licenseNumber, id)) {
             throw new DuplicateResourceException("Doctor license number already exists");
         }
 
         Doctor doctor = findDoctorEntity(id);
-        doctor.setFirstName(request.firstName());
-        doctor.setLastName(request.lastName());
-        doctor.setSpecialization(request.specialization());
-        doctor.setLicenseNumber(request.licenseNumber());
-        doctor.setPhone(request.phone());
-        doctor.setEmail(request.email());
-        doctor.setDepartment(request.department());
+        doctor.setFirstName(request.firstName().trim());
+        doctor.setLastName(request.lastName().trim());
+        doctor.setSpecialization(request.specialization().trim());
+        doctor.setLicenseNumber(licenseNumber);
+        doctor.setPhone(request.phone().trim());
+        doctor.setEmail(trimToNull(request.email()));
+        doctor.setDepartment(trimToNull(request.department()));
         return toResponse(doctor);
     }
 
@@ -91,5 +93,13 @@ public class DoctorService {
                 doctor.getCreatedAt(),
                 doctor.getUpdatedAt()
         );
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

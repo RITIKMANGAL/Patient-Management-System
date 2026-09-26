@@ -75,6 +75,22 @@ public class MedicalRecord {
         this.recordDate = recordDate;
     }
 
+    public void update(
+            Patient patient,
+            Doctor doctor,
+            String diagnosis,
+            String symptoms,
+            String notes,
+            LocalDate recordDate
+    ) {
+        this.patient = patient;
+        this.doctor = doctor;
+        this.diagnosis = diagnosis;
+        this.symptoms = symptoms;
+        this.notes = notes;
+        this.recordDate = recordDate;
+    }
+
     public UUID getId() {
         return id;
     }

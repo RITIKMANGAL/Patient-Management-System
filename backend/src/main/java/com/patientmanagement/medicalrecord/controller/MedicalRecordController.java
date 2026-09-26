@@ -1,11 +1,13 @@
 package com.patientmanagement.medicalrecord.controller;
 
+import com.patientmanagement.common.web.PageableSortValidator;
 import com.patientmanagement.medicalrecord.dto.MedicalRecordRequest;
 import com.patientmanagement.medicalrecord.dto.MedicalRecordResponse;
 import com.patientmanagement.medicalrecord.service.MedicalRecordService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Tag(name = "Medical Records", description = "Core medical record APIs")
 public class MedicalRecordController {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "recordDate",
+            "createdAt",
+            "updatedAt",
+            "diagnosis"
+    );
 
     private final MedicalRecordService medicalRecordService;
 
@@ -52,6 +61,7 @@ public class MedicalRecordController {
             @PathVariable UUID patientId,
             @PageableDefault(size = 20, sort = "recordDate") Pageable pageable
     ) {
+        PageableSortValidator.validate(pageable, ALLOWED_SORT_FIELDS);
         return medicalRecordService.getPatientMedicalRecords(patientId, pageable);
     }
 }

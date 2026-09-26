@@ -123,6 +123,24 @@ class DoctorControllerTests {
                 .andExpect(jsonPath("$.message").value("Doctor not found"));
     }
 
+    @Test
+    void invalidDoctorRequestReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/doctors")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void numericDoctorNameReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/doctors")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequest().replace("Kiran", "12345")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("firstName")));
+    }
+
     private String validRequest() {
         return """
                 {

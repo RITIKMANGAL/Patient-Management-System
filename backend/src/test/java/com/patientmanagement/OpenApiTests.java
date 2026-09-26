@@ -4,18 +4,25 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.patientmanagement.ai.service.AiClinicalService;
+import com.patientmanagement.appointment.service.AppointmentService;
 import com.patientmanagement.auth.repository.AuthUserRepository;
 import com.patientmanagement.auth.repository.RefreshTokenRepository;
 import com.patientmanagement.auth.repository.RoleRepository;
+import com.patientmanagement.communication.service.CommunicationService;
+import com.patientmanagement.consultation.service.ConsultationService;
 import com.patientmanagement.doctor.service.DoctorService;
+import com.patientmanagement.feedback.service.FeedbackService;
 import com.patientmanagement.medicalrecord.service.MedicalRecordService;
 import com.patientmanagement.patient.service.PatientService;
+import com.patientmanagement.prescription.access.service.PrescriptionAccessTokenService;
+import com.patientmanagement.prescription.service.PrescriptionPdfService;
 import com.patientmanagement.prescription.service.PrescriptionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,25 +31,49 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 class OpenApiTests {
 
-    @MockBean
+    @MockitoBean
     private PatientService patientService;
 
-    @MockBean
+    @MockitoBean
     private DoctorService doctorService;
 
-    @MockBean
+    @MockitoBean
     private MedicalRecordService medicalRecordService;
 
-    @MockBean
+    @MockitoBean
     private PrescriptionService prescriptionService;
 
-    @MockBean
+    @MockitoBean
+    private PrescriptionPdfService prescriptionPdfService;
+
+    @MockitoBean
+    private PrescriptionAccessTokenService prescriptionAccessTokenService;
+
+    @MockitoBean
+    private AppointmentService appointmentService;
+
+    @MockitoBean
+    private CommunicationService communicationService;
+
+    @MockitoBean
+    private ConsultationService consultationService;
+
+    @MockitoBean
+    private FeedbackService feedbackService;
+
+    @MockitoBean
+    private AiClinicalService aiClinicalService;
+
+    @MockitoBean
     private AuthUserRepository authUserRepository;
 
-    @MockBean
+    @MockitoBean
+    private com.patientmanagement.doctor.repository.DoctorRepository doctorRepository;
+
+    @MockitoBean
     private RoleRepository roleRepository;
 
-    @MockBean
+    @MockitoBean
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
@@ -52,7 +83,7 @@ class OpenApiTests {
     void openApiDocsStart() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.info.title").value("Patient Management System API"));
+                .andExpect(jsonPath("$.info.title").value("Clinora API"));
     }
 
     @Test

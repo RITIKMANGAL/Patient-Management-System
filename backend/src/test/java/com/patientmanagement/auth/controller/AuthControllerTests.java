@@ -119,7 +119,8 @@ class AuthControllerTests {
                   "username": "new.user@example.com",
                   "password": "StrongPass123",
                   "firstName": "New",
-                  "lastName": "User"
+                  "lastName": "User",
+                  "role": "RECEPTIONIST"
                 }
                 """;
     }

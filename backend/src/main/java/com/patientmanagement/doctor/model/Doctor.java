@@ -1,11 +1,15 @@
 package com.patientmanagement.doctor.model;
 
+import com.patientmanagement.auth.model.AuthUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
@@ -42,6 +46,10 @@ public class Doctor {
 
     @Column(length = 150)
     private String department;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
+    private AuthUser user;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -130,6 +138,14 @@ public class Doctor {
 
     public void setDepartment(String department) {
         this.department = department;
+    }
+
+    public AuthUser getUser() {
+        return user;
+    }
+
+    public void setUser(AuthUser user) {
+        this.user = user;
     }
 
     public Instant getCreatedAt() {

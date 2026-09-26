@@ -17,8 +17,10 @@ import com.patientmanagement.auth.model.Role;
 import com.patientmanagement.auth.model.RoleName;
 import com.patientmanagement.auth.repository.AuthUserRepository;
 import com.patientmanagement.auth.repository.RoleRepository;
+import com.patientmanagement.auth.security.CurrentUserService;
 import com.patientmanagement.auth.security.JwtService;
 import com.patientmanagement.common.exception.DuplicateResourceException;
+import com.patientmanagement.doctor.repository.DoctorRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +49,12 @@ class AuthServiceTests {
     @Mock
     private RefreshTokenService refreshTokenService;
 
+    @Mock
+    private CurrentUserService currentUserService;
+
+    @Mock
+    private DoctorRepository doctorRepository;
+
     private PasswordEncoder passwordEncoder;
     private AuthService authService;
 
@@ -58,7 +66,9 @@ class AuthServiceTests {
                 roleRepository,
                 passwordEncoder,
                 jwtService,
-                refreshTokenService
+                refreshTokenService,
+                currentUserService,
+                doctorRepository
         );
     }
 
@@ -169,9 +179,12 @@ class AuthServiceTests {
 
     @Test
     void logoutRevokesRefreshToken() {
+        UUID userId = UUID.randomUUID();
+        when(currentUserService.currentUserId()).thenReturn(Optional.of(userId));
+
         authService.logout("refresh-token");
 
-        verify(refreshTokenService).revokeRefreshToken("refresh-token");
+        verify(refreshTokenService).revokeRefreshTokenForUser("refresh-token", userId);
     }
 
     private RegisterRequest registerRequest() {
@@ -179,7 +192,9 @@ class AuthServiceTests {
                 "new.user@example.com",
                 "StrongPass123",
                 "New",
-                "User"
+                "User",
+                RoleName.RECEPTIONIST,
+                null
         );
     }
 

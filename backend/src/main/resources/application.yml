@@ -1,12 +1,24 @@
 app:
-  name: Patient Management System
+  name: Clinora
+  frontend-url: ${FRONTEND_API_URL:http://localhost:5173}
+
+clinic:
+  time-zone: ${CLINIC_TIME_ZONE:UTC}
 
 server:
   port: ${SERVER_PORT:8080}
 
 spring:
+  jackson:
+    use-jackson2-defaults: true
   application:
     name: patient-management-backend
+  data:
+    web:
+      pageable:
+        default-page-size: ${PAGEABLE_DEFAULT_SIZE:20}
+        max-page-size: ${PAGEABLE_MAX_SIZE:100}
+        one-indexed-parameters: false
   datasource:
     url: ${DATABASE_URL}
     username: ${DATABASE_USERNAME}
@@ -18,7 +30,7 @@ spring:
     open-in-view: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -30,6 +42,12 @@ springdoc:
     path: /swagger-ui.html
 
 security:
+  bootstrap-admin:
+    enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+    username: ${BOOTSTRAP_ADMIN_USERNAME:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    first-name: ${BOOTSTRAP_ADMIN_FIRST_NAME:}
+    last-name: ${BOOTSTRAP_ADMIN_LAST_NAME:}
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiration-seconds: ${JWT_ACCESS_TOKEN_EXPIRATION:900}
@@ -37,20 +55,66 @@ security:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
+communication:
+  sms:
+    enabled: ${SMS_ENABLED:true}
+    provider: ${SMS_PROVIDER:noop}
+    sender: ${SMS_SENDER:PMCLINIC}
+    timeout-seconds: ${SMS_TIMEOUT_SECONDS:15}
+    templates:
+      appointment-confirmation: ${SMS_TEMPLATE_APPOINTMENT_CONFIRMATION:}
+      appointment-reminder: ${SMS_TEMPLATE_APPOINTMENT_REMINDER:}
+      consultation-completed: ${SMS_TEMPLATE_CONSULTATION_COMPLETED:}
+      prescription-available: ${SMS_TEMPLATE_PRESCRIPTION_AVAILABLE:}
+      feedback-request: ${SMS_TEMPLATE_FEEDBACK_REQUEST:}
+  appointment-reminders:
+    enabled: ${APPOINTMENT_REMINDERS_ENABLED:true}
+    look-ahead-hours: ${APPOINTMENT_REMINDER_LOOK_AHEAD_HOURS:24}
+    fixed-delay-ms: ${APPOINTMENT_REMINDER_FIXED_DELAY_MS:900000}
+    initial-delay-ms: ${APPOINTMENT_REMINDER_INITIAL_DELAY_MS:60000}
+
+ai:
+  enabled: ${AI_ENABLED:true}
+  provider: ${AI_PROVIDER:mock}
+  model: ${AI_MODEL:mock-clinical-assistant-v1}
+  timeout-seconds: ${AI_TIMEOUT_SECONDS:15}
+  api-key: ${AI_API_KEY:}
+  base-url: ${AI_BASE_URL:https://api.openai.com/v1/chat/completions}
+
+prescription:
+  access:
+    token-expiration-hours: ${PRESCRIPTION_ACCESS_TOKEN_EXPIRATION_HOURS:168}
+
+feedback:
+  access:
+    token-expiration-hours: ${FEEDBACK_ACCESS_TOKEN_EXPIRATION_HOURS:168}
+    public-base-url: ${FEEDBACK_PUBLIC_BASE_URL:http://localhost:5173}
+
+demo:
+  data:
+    enabled: ${DEMO_DATA_ENABLED:false}
+    password: ${DEMO_DATA_PASSWORD:}
+
 management:
   endpoint:
     health:
+      show-details: never
       probes:
         enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
   endpoints:
     web:
       exposure:
         include: health,info
   info:
     env:
-      enabled: true
+      enabled: false
 
 info:
   app:
     name: ${spring.application.name}
-    description: Backend foundation for the Patient Management System
+    description: Backend services for the Clinora Modern Clinic Management Platform

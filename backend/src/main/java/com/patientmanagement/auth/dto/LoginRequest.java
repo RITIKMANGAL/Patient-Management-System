@@ -1,5 +1,6 @@
 package com.patientmanagement.auth.dto;
 
+import com.patientmanagement.common.validation.PasswordSize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -9,7 +10,11 @@ public record LoginRequest(
         String username,
 
         @NotBlank
-        @Size(max = 128)
+        @PasswordSize
         String password
 ) {
+    @Override
+    public String toString() {
+        return "LoginRequest[redacted]";
+    }
 }

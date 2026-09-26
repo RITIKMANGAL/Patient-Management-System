@@ -83,6 +83,14 @@ class PatientControllerTests {
     }
 
     @Test
+    void listPatientsRejectsUnsupportedSortField() throws Exception {
+        mockMvc.perform(get("/api/v1/patients")
+                        .param("sort", "passwordHash,asc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Unsupported sort field: passwordHash"));
+    }
+
+    @Test
     void updatePatientReturnsUpdatedPatient() throws Exception {
         UUID id = UUID.randomUUID();
         when(patientService.updatePatient(eq(id), any(PatientRequest.class))).thenReturn(response(id));
@@ -120,6 +128,15 @@ class PatientControllerTests {
                         .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void numericPatientNameReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/patients")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequest().replace("Asha", "12345")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("firstName")));
     }
 
     private String validRequest() {

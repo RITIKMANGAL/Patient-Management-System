@@ -70,13 +70,22 @@ public class JwtService {
     public JwtPrincipal validateAccessToken(String token) {
         try {
             SignedJWT signedJwt = SignedJWT.parse(token);
+            if (!JWSAlgorithm.HS256.equals(signedJwt.getHeader().getAlgorithm())) {
+                throw new BadCredentialsException("Invalid access token");
+            }
+
             if (!signedJwt.verify(new MACVerifier(secret))) {
                 throw new BadCredentialsException("Invalid access token");
             }
 
             JWTClaimsSet claims = signedJwt.getJWTClaimsSet();
             Date expirationTime = claims.getExpirationTime();
-            if (expirationTime == null || expirationTime.toInstant().isBefore(Instant.now(clock))) {
+            if (expirationTime == null || !expirationTime.toInstant().isAfter(Instant.now(clock))) {
+                throw new BadCredentialsException("Invalid access token");
+            }
+
+            String subject = claims.getSubject();
+            if (subject == null || subject.isBlank()) {
                 throw new BadCredentialsException("Invalid access token");
             }
 
@@ -86,7 +95,7 @@ public class JwtService {
             }
 
             return new JwtPrincipal(
-                    UUID.fromString(claims.getSubject()),
+                    UUID.fromString(subject),
                     username,
                     extractRoles(claims.getStringListClaim("roles"))
             );

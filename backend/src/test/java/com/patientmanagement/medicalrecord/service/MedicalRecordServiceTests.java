@@ -3,8 +3,10 @@ package com.patientmanagement.medicalrecord.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
+import com.patientmanagement.auth.security.ClinicalAccessService;
 import com.patientmanagement.common.exception.ResourceNotFoundException;
 import com.patientmanagement.doctor.model.Doctor;
 import com.patientmanagement.doctor.service.DoctorService;
@@ -108,6 +110,23 @@ class MedicalRecordServiceTests {
         when(doctorService.findDoctorEntity(doctorId)).thenThrow(new ResourceNotFoundException("Doctor not found"));
 
         assertThatThrownBy(() -> medicalRecordService.createMedicalRecord(request(patientId, doctorId)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Doctor not found");
+    }
+
+    @Test
+    void doctorScopedCreateMedicalRecordRejectsAnotherDoctorId() {
+        ClinicalAccessService clinicalAccessService = org.mockito.Mockito.mock(ClinicalAccessService.class);
+        MedicalRecordService scopedService = new MedicalRecordService(
+                medicalRecordRepository,
+                patientService,
+                doctorService,
+                clinicalAccessService
+        );
+        doThrow(new ResourceNotFoundException("Doctor not found"))
+                .when(clinicalAccessService).requireDoctorMatches(doctorId);
+
+        assertThatThrownBy(() -> scopedService.createMedicalRecord(request(patientId, doctorId)))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Doctor not found");
     }

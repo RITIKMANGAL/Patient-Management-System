@@ -11,6 +11,7 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
@@ -58,11 +59,11 @@ public class RefreshTokenService {
             throw new BadCredentialsException("Invalid refresh token");
         }
 
-        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(hash(rawToken))
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHashForUpdate(hash(rawToken))
                 .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
 
         if (refreshToken.isRevoked()
-                || refreshToken.getExpiresAt().isBefore(Instant.now(clock))
+                || !refreshToken.getExpiresAt().isAfter(Instant.now(clock))
                 || !refreshToken.getUser().isEnabled()) {
             throw new BadCredentialsException("Invalid refresh token");
         }
@@ -70,12 +71,13 @@ public class RefreshTokenService {
         return refreshToken;
     }
 
-    public void revokeRefreshToken(String rawToken) {
+    public void revokeRefreshTokenForUser(String rawToken, UUID userId) {
         if (rawToken == null || rawToken.isBlank()) {
             return;
         }
 
         refreshTokenRepository.findByTokenHash(hash(rawToken))
+                .filter(refreshToken -> refreshToken.getUser().getId().equals(userId))
                 .filter(refreshToken -> !refreshToken.isRevoked())
                 .ifPresent(refreshToken -> {
                     refreshToken.revoke();
