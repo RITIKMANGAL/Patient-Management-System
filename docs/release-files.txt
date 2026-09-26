@@ -219,10 +219,15 @@ backend/src/test/java/com/patientmanagement/prescription/controller/Prescription
 backend/src/test/java/com/patientmanagement/prescription/service/PrescriptionPdfServiceTests.java
 backend/src/test/java/com/patientmanagement/prescription/service/PrescriptionServiceTests.java
 docker-compose.yml
+docs/ai-and-communications.md
+docs/api.md
+docs/architecture.md
+docs/development.md
 docs/production-deployment.md
 docs/release-files.txt
 docs/remediation-files.txt
 docs/remediation-report.md
+docs/security.md
 frontend/.env.example
 frontend/.gitignore
 frontend/index.html
