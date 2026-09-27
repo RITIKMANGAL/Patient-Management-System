@@ -160,6 +160,44 @@ class OpenAiProviderTests {
     }
 
     @Test
+    void retriesClearlyTransientRateLimitsWithinTheConfiguredDeadline() throws Exception {
+        AtomicInteger requests = new AtomicInteger();
+        server = server(exchange -> {
+            if (requests.incrementAndGet() < 3) {
+                respond(exchange, 429, "{\"error\":\"too many requests, retry shortly\"}");
+                return;
+            }
+            respond(exchange, 200, openAiResponse(objectMapper.writeValueAsString(Map.of(
+                    "chiefComplaint", "Headache",
+                    "symptoms", "Mild headache",
+                    "examination", "Not provided",
+                    "assessment", "Not provided",
+                    "treatmentAdvice", "Rest discussed",
+                    "followUpInstructions", "Review if symptoms persist"
+            ))));
+        });
+
+        AiConsultationDraft draft = provider(serverUrl(), 8).generateConsultationDraft(validDraftInput());
+
+        assertThat(requests.get()).isEqualTo(3);
+        assertThat(draft.chiefComplaint()).isEqualTo("Headache");
+    }
+
+    @Test
+    void doesNotRetryQuotaExhaustionRateLimits() throws Exception {
+        AtomicInteger requests = new AtomicInteger();
+        server = server(exchange -> {
+            requests.incrementAndGet();
+            respond(exchange, 429, "{\"error\":\"quota exhausted\"}");
+        });
+
+        assertThatThrownBy(() -> provider(serverUrl(), 5).generateConsultationDraft(validDraftInput()))
+                .isInstanceOf(AiProviderException.class)
+                .hasMessage("AI provider rate limit exceeded");
+        assertThat(requests.get()).isEqualTo(1);
+    }
+
+    @Test
     void retriesTemporaryUnavailabilityAndParsesSuccessfulResponse() throws Exception {
         AtomicInteger requests = new AtomicInteger();
         server = server(exchange -> {

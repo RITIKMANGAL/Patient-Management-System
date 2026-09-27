@@ -123,9 +123,8 @@ public class OpenAiProvider implements AiProvider {
                         buildRequest(systemPrompt, userPrompt, remaining),
                         HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
                 );
-                if (response.statusCode() == 503 && retry < MAX_UNAVAILABLE_RETRIES) {
-                    long delayMillis = INITIAL_RETRY_DELAY_MILLIS << retry;
-                    delayMillis += ThreadLocalRandom.current().nextLong(INITIAL_RETRY_DELAY_MILLIS);
+                if (retry < MAX_UNAVAILABLE_RETRIES && isRetryable(response.statusCode(), response.body())) {
+                    long delayMillis = retryDelayMillis(retry);
                     if (Duration.ofMillis(delayMillis).toNanos() < deadline - System.nanoTime()) {
                         Thread.sleep(delayMillis);
                         continue;
@@ -205,6 +204,25 @@ public class OpenAiProvider implements AiProvider {
             return new AiProviderException("AI provider temporarily unavailable");
         }
         return new AiProviderException("AI provider returned an unsuccessful response");
+    }
+
+    private boolean isRetryable(int statusCode, String responseBody) {
+        if (statusCode == 503) {
+            return true;
+        }
+        if (statusCode != 429) {
+            return false;
+        }
+        String normalized = responseBody == null ? "" : responseBody.toLowerCase(java.util.Locale.ROOT);
+        if (normalized.contains("quota") || normalized.contains("resource_exhausted")) {
+            return false;
+        }
+        return normalized.contains("rate limit") || normalized.contains("too many requests");
+    }
+
+    private long retryDelayMillis(int retry) {
+        return (INITIAL_RETRY_DELAY_MILLIS << retry)
+                + ThreadLocalRandom.current().nextLong(INITIAL_RETRY_DELAY_MILLIS);
     }
 
     private String extractMessageContent(String responseBody) {

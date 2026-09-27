@@ -91,9 +91,18 @@ feedback:
     public-base-url: ${FEEDBACK_PUBLIC_BASE_URL:http://localhost:5173}
 
 demo:
+  mode:
+    enabled: ${DEMO_MODE:false}
+    admin-username: ${DEMO_ADMIN_USERNAME:demo-admin@clinora.app}
   data:
     enabled: ${DEMO_DATA_ENABLED:false}
     password: ${DEMO_DATA_PASSWORD:}
+  ai:
+    enabled: ${DEMO_AI_PROTECTION_ENABLED:false}
+    max-requests-per-minute: ${DEMO_AI_MAX_REQUESTS_PER_MINUTE:3}
+    max-concurrent-requests: ${DEMO_AI_MAX_CONCURRENT_REQUESTS:1}
+    max-prompt-characters: ${DEMO_AI_MAX_PROMPT_CHARACTERS:1800}
+    max-output-characters: ${DEMO_AI_MAX_OUTPUT_CHARACTERS:1600}
 
 management:
   endpoint:

@@ -1,7 +1,10 @@
 **/target/
 .env
+.env.demo
 **/.env
+**/.env.demo
 !.env.example
+!.env.demo.example
 
 .idea/
 .vscode/

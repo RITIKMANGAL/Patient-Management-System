@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +55,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class DemoDataSeederTests {
@@ -236,6 +241,34 @@ class DemoDataSeederTests {
         assertThat(activeAppointment.getStatus()).isEqualTo(AppointmentStatus.CONFIRMED);
         assertThat(activeConsultation.getStatus()).isEqualTo(ConsultationStatus.IN_PROGRESS);
         assertThat(activeConsultation.getCompletedAt()).isNull();
+    }
+
+    @Test
+    void defersDemoCommunicationsUntilTheSeedTransactionCommits() {
+        stubAll();
+        DemoDataSeeder seeder = seeder(true);
+        TransactionSynchronizationManager.initSynchronization();
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+
+        try {
+            seeder.seed();
+
+            verify(communicationService, never()).createAppointmentConfirmation(any(Appointment.class));
+            verify(communicationService, never()).createPrescriptionAvailable(any(Prescription.class));
+            verify(communicationService, atLeastOnce()).createAppointmentReminder(any(Appointment.class));
+            verify(communicationService, atLeastOnce()).createCommunication(any(CommunicationCreateRequest.class));
+
+            TransactionSynchronizationManager.getSynchronizations().forEach(synchronization -> {
+                synchronization.afterCommit();
+                synchronization.afterCompletion(TransactionSynchronization.STATUS_COMMITTED);
+            });
+
+            verify(communicationService, atLeastOnce()).createPrescriptionAvailable(any(Prescription.class));
+            verify(communicationService, atLeastOnce()).createAppointmentConfirmation(any(Appointment.class));
+        } finally {
+            TransactionSynchronizationManager.setActualTransactionActive(false);
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     private void assertDemoUser(String username, RoleName roleName) {

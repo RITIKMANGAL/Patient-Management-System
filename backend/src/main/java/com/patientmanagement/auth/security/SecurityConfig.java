@@ -1,6 +1,7 @@
 package com.patientmanagement.auth.security;
 
 import java.util.List;
+import com.patientmanagement.demo.security.DemoAiProtectionFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,7 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter,
             RestAuthenticationEntryPoint authenticationEntryPoint,
             RestAccessDeniedHandler accessDeniedHandler,
+            DemoAiProtectionFilter demoAiProtectionFilter,
             SecurityErrorWriter errorWriter,
             java.time.Clock clock,
             @org.springframework.beans.factory.annotation.Value("${security.abuse-control.enabled:true}") boolean abuseControlEnabled
@@ -66,6 +68,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new AbuseControlFilter(errorWriter, clock, abuseControlEnabled), JwtAuthenticationFilter.class)
+                .addFilterAfter(demoAiProtectionFilter, AbuseControlFilter.class)
                 .build();
     }
 
@@ -99,6 +102,15 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter
     ) {
         FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(jwtAuthenticationFilter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<DemoAiProtectionFilter> demoAiProtectionFilterRegistration(
+            DemoAiProtectionFilter demoAiProtectionFilter
+    ) {
+        FilterRegistrationBean<DemoAiProtectionFilter> registration = new FilterRegistrationBean<>(demoAiProtectionFilter);
         registration.setEnabled(false);
         return registration;
     }

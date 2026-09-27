@@ -1125,6 +1125,68 @@ form {
   gap: 14px;
 }
 
+.demo-banner {
+  align-items: center;
+  background: #fff4d6;
+  border-bottom: 1px solid #e6bf67;
+  color: #5d430d;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px var(--space-page);
+  text-align: center;
+}
+
+.demo-banner strong {
+  font-size: 0.78rem;
+  letter-spacing: 0;
+}
+
+.demo-banner span {
+  font-size: 0.86rem;
+}
+
+.demo-banner-compact {
+  border: 1px solid #e6bf67;
+  border-radius: var(--radius-sm);
+  justify-content: flex-start;
+  min-height: 0;
+  padding: 9px 10px;
+}
+
+.demo-login-notice {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.demo-login-notice > p {
+  font-weight: 700;
+  margin: 0;
+}
+
+.demo-login-notice dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.demo-login-notice dl div {
+  display: grid;
+  gap: 2px;
+}
+
+.demo-login-notice dt {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.demo-login-notice dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .clinical-timeline {
   display: grid;
   gap: 0;
@@ -1356,6 +1418,11 @@ form {
   .detail-card,
   .history-card {
     padding: 18px;
+  }
+
+  .demo-banner {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

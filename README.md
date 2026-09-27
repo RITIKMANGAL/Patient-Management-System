@@ -122,6 +122,14 @@ Local Compose defaults use `SPRING_PROFILES_ACTIVE=local`, mock AI, and the NoOp
 
 The `prod` profile requires explicit database, JWT, CORS, frontend, feedback, and clinic-time-zone configuration. It does not silently fall back to localhost; it disables demo data, Swagger, AI, and SMS by default. See the [development guide](docs/development.md) and [production deployment guide](docs/production-deployment.md).
 
+## Live Demo
+
+Demo: `https://demo.<DOMAIN>`
+
+The public demo is a separate, resettable deployment backed only by synthetic data. Its dedicated account is `demo-admin@clinora.app`; the disposable public password is configured at deployment time and displayed only by the demo frontend. The demo uses the real configured Gemini-compatible provider, never the mock provider, while SMS remains disabled.
+
+The demo database, volume, database credentials, JWT secret, admin password, and AI key must be distinct from production. See [public demo deployment](docs/demo.md) for the required environment, reverse-proxy layout, AI limits, and safe reset command.
+
 ## Authentication and Authorization
 
 Authentication is implemented inside the modular monolith. It is not currently a separate authentication service.
@@ -265,6 +273,7 @@ The workflow verifies code; it does not deploy the application, provision cloud 
 
 - [Architecture and data model](docs/architecture.md)
 - [Development and local operations](docs/development.md)
+- [Public demo deployment](docs/demo.md)
 - [API reference](docs/api.md)
 - [Security and authorization](docs/security.md)
 - [AI and communications](docs/ai-and-communications.md)

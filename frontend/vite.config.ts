@@ -18,6 +18,9 @@ export default defineConfig(({ command, mode }) => {
         throw new Error("Production API URL must use non-local HTTPS without credentials, query or fragment");
       }
     }
+    if (env.VITE_DEMO_MODE === "true" && (!env.VITE_DEMO_USERNAME?.trim() || !env.VITE_DEMO_PASSWORD)) {
+      throw new Error("Demo builds require VITE_DEMO_USERNAME and VITE_DEMO_PASSWORD");
+    }
   }
   return {
   plugins: [react()],

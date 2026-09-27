@@ -2,6 +2,8 @@ import { FormEvent, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/apiClient";
 import { useAuth } from "../auth/AuthContext";
+import { DemoEnvironmentBanner } from "../components/DemoEnvironmentBanner";
+import { demoConfiguration } from "../config/demo";
 
 interface LocationState {
   from?: {
@@ -53,6 +55,16 @@ export function LoginPage() {
         </div>
         <h1 id="login-heading">Welcome back</h1>
         <p className="auth-description">Sign in to your secure clinic workspace.</p>
+        {demoConfiguration.enabled && (
+          <div className="demo-login-notice">
+            <DemoEnvironmentBanner compact />
+            <p>Demo account</p>
+            <dl>
+              <div><dt>Username</dt><dd>{demoConfiguration.username}</dd></div>
+              <div><dt>Password</dt><dd>{demoConfiguration.password || "Configured by the demo host"}</dd></div>
+            </dl>
+          </div>
+        )}
         <form onSubmit={handleSubmit} noValidate>
           <div className="field-group">
             <label htmlFor="username">Email</label>

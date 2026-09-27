@@ -9,6 +9,8 @@ import {
   UserPlus
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
+import { DemoEnvironmentBanner } from "../components/DemoEnvironmentBanner";
+import { demoConfiguration } from "../config/demo";
 import type { RoleName } from "../types/auth";
 import type { LucideIcon } from "lucide-react";
 
@@ -53,6 +55,7 @@ export function AppLayout() {
           </button>
         </div>
       </header>
+      {demoConfiguration.enabled && <DemoEnvironmentBanner />}
 
       <div className="app-body">
         <aside className="sidebar" aria-label="Application navigation">

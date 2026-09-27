@@ -1,0 +1,28 @@
+spring:
+  config:
+    activate:
+      on-profile: demo
+
+demo:
+  mode:
+    enabled: ${DEMO_MODE:true}
+    admin-username: ${DEMO_ADMIN_USERNAME:demo-admin@clinora.app}
+  data:
+    enabled: ${DEMO_DATA_ENABLED:true}
+    password: ${DEMO_ADMIN_PASSWORD}
+  ai:
+    enabled: ${DEMO_AI_PROTECTION_ENABLED:true}
+
+communication:
+  sms:
+    enabled: ${SMS_ENABLED:false}
+  appointment-reminders:
+    enabled: false
+
+ai:
+  enabled: ${AI_ENABLED:true}
+  provider: ${AI_PROVIDER:openai}
+  model: ${AI_MODEL:gemini-3.8-flash}
+  timeout-seconds: ${AI_TIMEOUT_SECONDS:30}
+  api-key: ${DEMO_AI_API_KEY}
+  base-url: ${AI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai/}

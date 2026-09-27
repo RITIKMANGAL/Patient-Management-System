@@ -1,0 +1,68 @@
+name: clinora-demo
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: clinora-demo-postgres
+    environment:
+      POSTGRES_DB: clinora_demo
+      POSTGRES_USER: clinora_demo
+      POSTGRES_PASSWORD: ${DEMO_DATABASE_PASSWORD:?Set DEMO_DATABASE_PASSWORD in .env.demo or the shell environment}
+    volumes:
+      - clinora_demo_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinora_demo -d clinora_demo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: clinora-demo-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: demo
+      DEMO_MODE: "true"
+      DEMO_DATA_ENABLED: "true"
+      DEMO_ADMIN_USERNAME: ${DEMO_ADMIN_USERNAME:-demo-admin@clinora.app}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:?Set DEMO_ADMIN_PASSWORD in .env.demo or the shell environment}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/clinora_demo
+      DATABASE_USERNAME: clinora_demo
+      DATABASE_PASSWORD: ${DEMO_DATABASE_PASSWORD:?Set DEMO_DATABASE_PASSWORD in .env.demo or the shell environment}
+      JWT_SECRET: ${DEMO_JWT_SECRET:?Set DEMO_JWT_SECRET in .env.demo or the shell environment}
+      CORS_ALLOWED_ORIGINS: ${DEMO_FRONTEND_URL:?Set DEMO_FRONTEND_URL to the HTTPS demo origin}
+      FRONTEND_API_URL: ${DEMO_FRONTEND_URL:?Set DEMO_FRONTEND_URL to the HTTPS demo origin}
+      CLINIC_TIME_ZONE: ${DEMO_CLINIC_TIME_ZONE:-UTC}
+      AI_ENABLED: "true"
+      AI_PROVIDER: openai
+      AI_MODEL: ${AI_MODEL:-gemini-3.8-flash}
+      AI_API_KEY: ${DEMO_AI_API_KEY:?Set DEMO_AI_API_KEY in .env.demo or the shell environment}
+      AI_BASE_URL: ${AI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai/}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-30}
+      DEMO_AI_PROTECTION_ENABLED: "true"
+      DEMO_AI_MAX_REQUESTS_PER_MINUTE: ${DEMO_AI_MAX_REQUESTS_PER_MINUTE:-3}
+      DEMO_AI_MAX_CONCURRENT_REQUESTS: ${DEMO_AI_MAX_CONCURRENT_REQUESTS:-1}
+      DEMO_AI_MAX_PROMPT_CHARACTERS: ${DEMO_AI_MAX_PROMPT_CHARACTERS:-1800}
+      DEMO_AI_MAX_OUTPUT_CHARACTERS: ${DEMO_AI_MAX_OUTPUT_CHARACTERS:-1600}
+      SMS_ENABLED: "false"
+      APPOINTMENT_REMINDERS_ENABLED: "false"
+      DEMO_DATA_PASSWORD: ${DEMO_ADMIN_PASSWORD:?Set DEMO_ADMIN_PASSWORD in .env.demo or the shell environment}
+      FEEDBACK_PUBLIC_BASE_URL: ${DEMO_FRONTEND_URL:?Set DEMO_FRONTEND_URL to the HTTPS demo origin}
+    ports:
+      - "127.0.0.1:${DEMO_BACKEND_PORT:-18080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+volumes:
+  clinora_demo_postgres_data:
+    name: clinora_demo_postgres_data

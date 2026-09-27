@@ -15,6 +15,7 @@ import com.patientmanagement.appointment.repository.AppointmentRepository;
 import com.patientmanagement.auth.security.ClinicalAccessService;
 import com.patientmanagement.consultation.model.Consultation;
 import com.patientmanagement.consultation.repository.ConsultationRepository;
+import com.patientmanagement.demo.security.DemoAiInputLimiter;
 import com.patientmanagement.medicalrecord.model.MedicalRecord;
 import com.patientmanagement.medicalrecord.repository.MedicalRecordRepository;
 import com.patientmanagement.patient.model.Patient;
@@ -64,6 +65,7 @@ public class AiClinicalService {
     private final PrescriptionRepository prescriptionRepository;
     private final ClinicalAccessService clinicalAccessService;
     private final Clock clock;
+    private final DemoAiInputLimiter demoAiInputLimiter;
 
     public AiClinicalService(
             AiProvider aiProvider,
@@ -84,7 +86,8 @@ public class AiClinicalService {
                 medicalRecordRepository,
                 prescriptionRepository,
                 clinicalAccessService,
-                Clock.systemDefaultZone()
+                Clock.systemDefaultZone(),
+                null
         );
     }
 
@@ -107,7 +110,33 @@ public class AiClinicalService {
                 medicalRecordRepository,
                 prescriptionRepository,
                 null,
-                clock
+                clock,
+                null
+        );
+    }
+
+    AiClinicalService(
+            AiProvider aiProvider,
+            AiProperties aiProperties,
+            ConsultationRepository consultationRepository,
+            PatientService patientService,
+            AppointmentRepository appointmentRepository,
+            MedicalRecordRepository medicalRecordRepository,
+            PrescriptionRepository prescriptionRepository,
+            ClinicalAccessService clinicalAccessService,
+            Clock clock
+    ) {
+        this(
+                aiProvider,
+                aiProperties,
+                consultationRepository,
+                patientService,
+                appointmentRepository,
+                medicalRecordRepository,
+                prescriptionRepository,
+                clinicalAccessService,
+                clock,
+                null
         );
     }
 
@@ -121,7 +150,8 @@ public class AiClinicalService {
             MedicalRecordRepository medicalRecordRepository,
             PrescriptionRepository prescriptionRepository,
             ClinicalAccessService clinicalAccessService,
-            Clock clock
+            Clock clock,
+            DemoAiInputLimiter demoAiInputLimiter
     ) {
         this.aiProvider = aiProvider;
         this.aiProperties = aiProperties;
@@ -132,6 +162,7 @@ public class AiClinicalService {
         this.prescriptionRepository = prescriptionRepository;
         this.clinicalAccessService = clinicalAccessService;
         this.clock = clock;
+        this.demoAiInputLimiter = demoAiInputLimiter;
     }
 
     @Transactional(readOnly = true)
@@ -140,6 +171,9 @@ public class AiClinicalService {
                 .orElseThrow(() -> new com.patientmanagement.common.exception.ResourceNotFoundException("Consultation not found"));
         requireConsultationAccess(consultation);
         ensureEnabled();
+        if (demoAiInputLimiter != null) {
+            demoAiInputLimiter.requireDraftWithinLimit(request);
+        }
 
         AiConsultationDraft draft = callProvider(() -> aiProvider.generateConsultationDraft(new AiConsultationDraftInput(
                 nullableTrim(request.roughNotes()),
@@ -185,6 +219,9 @@ public class AiClinicalService {
                 medicalRecords,
                 prescriptions
         );
+        if (demoAiInputLimiter != null) {
+            demoAiInputLimiter.requireSummaryWithinLimit(input);
+        }
 
         AiPatientHistorySummaryResponse response = callProvider(() -> aiProvider.summarizePatientHistory(input));
         validateSummary(response);
@@ -364,7 +401,7 @@ public class AiClinicalService {
     }
 
     private boolean invalidOutput(String value) {
-        return value == null || value.isBlank() || value.length() > MAX_OUTPUT_LENGTH;
+        return value == null || value.isBlank() || value.length() > outputLimit();
     }
 
     private List<String> bounded(List<String> values) {
@@ -372,7 +409,7 @@ public class AiClinicalService {
                 .filter(value -> value != null && !value.isBlank())
                 .map(this::visibleText)
                 .filter(value -> !value.equalsIgnoreCase("Not provided"))
-                .map(value -> value.length() > MAX_OUTPUT_LENGTH ? value.substring(0, MAX_OUTPUT_LENGTH) : value)
+                .map(value -> value.length() > outputLimit() ? value.substring(0, outputLimit()) : value)
                 .limit(HISTORY_LIMIT)
                 .toList();
     }
@@ -386,6 +423,12 @@ public class AiClinicalService {
             return "";
         }
         return visible;
+    }
+
+    private int outputLimit() {
+        return demoAiInputLimiter == null
+                ? MAX_OUTPUT_LENGTH
+                : Math.min(MAX_OUTPUT_LENGTH, demoAiInputLimiter.maxOutputCharacters());
     }
 
     private String displayEnum(String value) {

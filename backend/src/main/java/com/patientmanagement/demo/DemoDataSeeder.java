@@ -14,9 +14,11 @@ import com.patientmanagement.communication.model.CommunicationStatus;
 import com.patientmanagement.communication.model.CommunicationType;
 import com.patientmanagement.communication.repository.CommunicationRepository;
 import com.patientmanagement.communication.service.CommunicationService;
+import com.patientmanagement.common.AfterCommitAction;
 import com.patientmanagement.consultation.model.Consultation;
 import com.patientmanagement.consultation.repository.ConsultationRepository;
 import com.patientmanagement.demo.config.DemoDataProperties;
+import com.patientmanagement.demo.config.DemoModeProperties;
 import com.patientmanagement.doctor.model.Doctor;
 import com.patientmanagement.doctor.repository.DoctorRepository;
 import com.patientmanagement.feedback.model.Feedback;
@@ -87,6 +89,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final CommunicationService communicationService;
     private final FeedbackRepository feedbackRepository;
     private final Clock clock;
+    private final String adminUsername;
 
     @Autowired
     public DemoDataSeeder(
@@ -102,7 +105,8 @@ public class DemoDataSeeder implements ApplicationRunner {
             PrescriptionRepository prescriptionRepository,
             CommunicationRepository communicationRepository,
             CommunicationService communicationService,
-            FeedbackRepository feedbackRepository
+            FeedbackRepository feedbackRepository,
+            DemoModeProperties demoModeProperties
     ) {
         this(
                 properties,
@@ -118,7 +122,8 @@ public class DemoDataSeeder implements ApplicationRunner {
                 communicationRepository,
                 communicationService,
                 feedbackRepository,
-                Clock.systemDefaultZone()
+                Clock.systemDefaultZone(),
+                demoModeProperties.adminUsername()
         );
     }
 
@@ -138,6 +143,42 @@ public class DemoDataSeeder implements ApplicationRunner {
             FeedbackRepository feedbackRepository,
             Clock clock
     ) {
+        this(
+                properties,
+                authUserRepository,
+                roleRepository,
+                passwordEncoder,
+                patientRepository,
+                doctorRepository,
+                appointmentRepository,
+                consultationRepository,
+                medicalRecordRepository,
+                prescriptionRepository,
+                communicationRepository,
+                communicationService,
+                feedbackRepository,
+                clock,
+                ADMIN_EMAIL
+        );
+    }
+
+    private DemoDataSeeder(
+            DemoDataProperties properties,
+            AuthUserRepository authUserRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder,
+            PatientRepository patientRepository,
+            DoctorRepository doctorRepository,
+            AppointmentRepository appointmentRepository,
+            ConsultationRepository consultationRepository,
+            MedicalRecordRepository medicalRecordRepository,
+            PrescriptionRepository prescriptionRepository,
+            CommunicationRepository communicationRepository,
+            CommunicationService communicationService,
+            FeedbackRepository feedbackRepository,
+            Clock clock,
+            String adminUsername
+    ) {
         this.properties = properties;
         this.authUserRepository = authUserRepository;
         this.roleRepository = roleRepository;
@@ -152,6 +193,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.communicationService = communicationService;
         this.feedbackRepository = feedbackRepository;
         this.clock = clock;
+        this.adminUsername = adminUsername;
     }
 
     @Override
@@ -181,7 +223,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         String demoPassword = requiredDemoPassword();
         SeedCounter counter = new SeedCounter();
         Map<RoleName, Role> roles = roles();
-        ensureUser(ADMIN_EMAIL, "Anika", "Mehta", roles.get(RoleName.ADMIN), demoPassword, counter);
+        ensureUser(adminUsername, "Anika", "Mehta", roles.get(RoleName.ADMIN), demoPassword, counter);
         AuthUser primaryDoctorUser = ensureUser(
                 DOCTOR_EMAIL,
                 "Maya",
@@ -812,17 +854,10 @@ public class DemoDataSeeder implements ApplicationRunner {
             return;
         }
         if (type == CommunicationType.APPOINTMENT_CONFIRMATION) {
-            communicationService.createAppointmentConfirmation(appointment);
-        } else if (type == CommunicationType.APPOINTMENT_REMINDER) {
-            communicationService.createAppointmentReminder(appointment);
+            // Confirmation dispatch opens a REQUIRES_NEW transaction, so wait until seeded entities commit.
+            AfterCommitAction.run(() -> communicationService.createAppointmentConfirmation(appointment));
         } else {
-            communicationService.createCommunication(new CommunicationCreateRequest(
-                    appointment.getPatient().getId(),
-                    appointment.getId(),
-                    type,
-                    CommunicationChannel.SMS,
-                    appointment.getPatient().getPhone()
-            ));
+            createAppointmentCommunication(appointment, type);
         }
         counter.communicationsRequested++;
     }
@@ -838,8 +873,22 @@ public class DemoDataSeeder implements ApplicationRunner {
     }
 
     private void requestPrescriptionCommunication(Prescription prescription, SeedCounter counter) {
-        communicationService.createPrescriptionAvailable(prescription);
+        AfterCommitAction.run(() -> communicationService.createPrescriptionAvailable(prescription));
         counter.communicationsRequested++;
+    }
+
+    private void createAppointmentCommunication(Appointment appointment, CommunicationType type) {
+        if (type == CommunicationType.APPOINTMENT_REMINDER) {
+            communicationService.createAppointmentReminder(appointment);
+        } else {
+            communicationService.createCommunication(new CommunicationCreateRequest(
+                    appointment.getPatient().getId(),
+                    appointment.getId(),
+                    type,
+                    CommunicationChannel.SMS,
+                    appointment.getPatient().getPhone()
+            ));
+        }
     }
 
     private String marker(String notes) {

@@ -1,5 +1,6 @@
 # Required release inclusion list. No secrets, local environments or generated output.
 .env.example
+.env.demo.example
 .github/workflows/verify.yml
 .gitignore
 README.md
@@ -105,7 +106,12 @@ backend/src/main/java/com/patientmanagement/consultation/model/ConsultationStatu
 backend/src/main/java/com/patientmanagement/consultation/repository/ConsultationRepository.java
 backend/src/main/java/com/patientmanagement/consultation/service/ConsultationService.java
 backend/src/main/java/com/patientmanagement/demo/DemoDataSeeder.java
+backend/src/main/java/com/patientmanagement/demo/config/DemoAiProperties.java
 backend/src/main/java/com/patientmanagement/demo/config/DemoDataProperties.java
+backend/src/main/java/com/patientmanagement/demo/config/DemoEnvironmentValidator.java
+backend/src/main/java/com/patientmanagement/demo/config/DemoModeProperties.java
+backend/src/main/java/com/patientmanagement/demo/security/DemoAiInputLimiter.java
+backend/src/main/java/com/patientmanagement/demo/security/DemoAiProtectionFilter.java
 backend/src/main/java/com/patientmanagement/doctor/controller/DoctorController.java
 backend/src/main/java/com/patientmanagement/doctor/dto/DoctorRequest.java
 backend/src/main/java/com/patientmanagement/doctor/dto/DoctorResponse.java
@@ -158,6 +164,7 @@ backend/src/main/java/com/patientmanagement/prescription/service/PrescriptionPdf
 backend/src/main/java/com/patientmanagement/prescription/service/PrescriptionPdfService.java
 backend/src/main/java/com/patientmanagement/prescription/service/PrescriptionService.java
 backend/src/main/resources/application-local.yml
+backend/src/main/resources/application-demo.yml
 backend/src/main/resources/application-prod.yml
 backend/src/main/resources/application-test.yml
 backend/src/main/resources/application.yml
@@ -204,6 +211,9 @@ backend/src/test/java/com/patientmanagement/config/ProductionSafetyConfigTests.j
 backend/src/test/java/com/patientmanagement/consultation/controller/ConsultationControllerTests.java
 backend/src/test/java/com/patientmanagement/consultation/service/ConsultationServiceTests.java
 backend/src/test/java/com/patientmanagement/demo/DemoDataSeederTests.java
+backend/src/test/java/com/patientmanagement/demo/config/DemoEnvironmentValidatorTests.java
+backend/src/test/java/com/patientmanagement/demo/security/DemoAiInputLimiterTests.java
+backend/src/test/java/com/patientmanagement/demo/security/DemoAiProtectionFilterTests.java
 backend/src/test/java/com/patientmanagement/doctor/controller/DoctorControllerTests.java
 backend/src/test/java/com/patientmanagement/doctor/service/DoctorServiceTests.java
 backend/src/test/java/com/patientmanagement/feedback/service/FeedbackServiceTests.java
@@ -219,16 +229,19 @@ backend/src/test/java/com/patientmanagement/prescription/controller/Prescription
 backend/src/test/java/com/patientmanagement/prescription/service/PrescriptionPdfServiceTests.java
 backend/src/test/java/com/patientmanagement/prescription/service/PrescriptionServiceTests.java
 docker-compose.yml
+docker-compose.demo.yml
 docs/ai-and-communications.md
 docs/api.md
 docs/architecture.md
 docs/development.md
+docs/demo.md
 docs/production-deployment.md
 docs/release-files.txt
 docs/remediation-files.txt
 docs/remediation-report.md
 docs/security.md
 frontend/.env.example
+frontend/.env.demo.example
 frontend/.gitignore
 frontend/index.html
 frontend/package-lock.json
@@ -255,12 +268,16 @@ frontend/src/components/ConfirmDialog.test.tsx
 frontend/src/components/ConfirmDialog.tsx
 frontend/src/components/DocumentTitle.test.tsx
 frontend/src/components/DocumentTitle.tsx
+frontend/src/components/DemoEnvironmentBanner.tsx
+frontend/src/config/demo.test.ts
+frontend/src/config/demo.ts
 frontend/src/layouts/AppLayout.tsx
 frontend/src/main.tsx
 frontend/src/pages/AppointmentsPage.test.tsx
 frontend/src/pages/AppointmentsPage.tsx
 frontend/src/pages/DashboardPage.test.tsx
 frontend/src/pages/DashboardPage.tsx
+frontend/src/pages/DemoLoginPage.test.tsx
 frontend/src/pages/DoctorsPage.test.tsx
 frontend/src/pages/DoctorsPage.tsx
 frontend/src/pages/DomainListPage.test.tsx
@@ -310,4 +327,6 @@ frontend/tsconfig.node.json
 frontend/vite.config.ts
 scripts/check-release.ps1
 scripts/dependency-audit.ps1
+scripts/reset-demo.ps1
+scripts/reset-demo.sh
 scripts/security-smoke-test.ps1
