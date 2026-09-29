@@ -1,4 +1,4 @@
-# Clinora
+# Clinora  🔗 **Live Application:** https://clinora-demo.vercel.app/
 
 Clinora is a clinic management application for operational and clinical staff. It combines a React web application with a Java 21 / Spring Boot modular monolith, PostgreSQL, and a documented local Docker environment. It supports authenticated patient, doctor, appointment, consultation, medical-record, prescription, feedback, communication, and clinician-assistive workflows.
 
